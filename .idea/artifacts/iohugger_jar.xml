@@ -1,0 +1,10 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="iohugger:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/iohugger_jar</output-path>
+    <root id="archive" name="iohugger.jar">
+      <element id="module-output" name="iohugger" />
+      <element id="library" level="project" name="apidocs" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/commons-cli-1.4-bin/commons-cli-1.4/commons-cli-1.4.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>

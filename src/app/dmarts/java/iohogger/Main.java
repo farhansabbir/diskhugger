@@ -12,7 +12,12 @@ public class Main{
             options.addOption("s", "filesize", true, "Size of files in bytes (default is 1MB=1048576)");
 
             OptionGroup group = new OptionGroup();
-            Option seqrand = Option.builder().longOpt("random").hasArg(false).build();
+            Option seqrand = Option.builder()
+                    .required(true)
+                    .desc("Random or sequential access")
+                    .longOpt("random")
+                    .hasArg(false)
+                    .build();
             group.setRequired(true);
             options.addOptionGroup(group);
 
