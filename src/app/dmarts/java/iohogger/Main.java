@@ -24,7 +24,7 @@ public class Main{
         Main.LOCATION.add(System.getProperty("user.dir"));
         try {
             options.addOption("b", "buffer", true, "Integer. Read/write buffer size in bytes (default: " + Main.BUFFER_SIZE + ")");
-            options.addOption("s", "filesize", true, "Integer. Size of files in bytes (default: " + Main.FILE_SIZE + ")");
+            options.addOption("s", "filesize", true, "Integer. Size of each file in bytes (default: " + Main.FILE_SIZE + ")");
 
 
             OptionGroup group = new OptionGroup();
@@ -45,6 +45,7 @@ public class Main{
 
             options.addOption("l", "locations", true, "String. Directories to read/write files (default: " + Main.LOCATION + ")");
             options.addOption("n","number-of-files",true,"Integer. Number of concurrent files to read from/write to (default: " + Main.NUMBER_OF_FILES + ". Max: 100)");
+            options.addOption("p","prefix",true,"String. Filename prefix (default: " + Main.FILE_NAME_PREFIX + ")");
             options.getOption("l").setValueSeparator(':');
             CommandLine commandLine = new DefaultParser().parse(options, args);
             if (commandLine.hasOption("rnd"))
@@ -60,6 +61,9 @@ public class Main{
             }
             if (commandLine.hasOption("s")){
                 Main.FILE_SIZE = Integer.parseInt(commandLine.getOptionValue("s"));
+            }
+            if (commandLine.hasOption("p")){
+                Main.FILE_NAME_PREFIX = commandLine.getOptionValue("p");
             }
             System.out.println("Load summary:");
             System.out.println("Buffer size: " + Main.BUFFER_SIZE);
