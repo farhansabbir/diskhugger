@@ -1,22 +1,26 @@
 package app.dmarts.java.iohogger;
 
+import com.google.gson.JsonElement;
 import org.apache.commons.cli.*;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Main{
     protected static boolean RANDOM_ACCESS = false;
     protected static int BUFFER_SIZE = 4096 * 2; // multiples of 4k
     protected static long FILE_SIZE = 1048576 * 5; // multiples of 1MB
-    protected static List<String> LOCATION = new ArrayList<String>(){
-
-    };
+    protected static List<String> LOCATION = new ArrayList<String>();
     protected static int NUMBER_OF_FILES = 20;
     protected static String FILE_NAME_PREFIX = "iohogger";
-
+    protected static ConcurrentHashMap<String, JsonElement> STATUS = new ConcurrentHashMap<>();
+    private static ExecutorService IOGEN_POOL;
 
 
     public static void main(String[] args) {
@@ -43,10 +47,9 @@ public class Main{
             group.setRequired(true);
             options.addOptionGroup(group);
 
-            options.addOption("l", "locations", true, "String. Directories to read/write files (default: " + Main.LOCATION + ")");
-            options.addOption("n","number-of-files",true,"Integer. Number of concurrent files to read from/write to (default: " + Main.NUMBER_OF_FILES + ". Max: 100)");
+            options.addOption("l", "locations", true, "String. CSV of directories to read/write files (default: " + Main.LOCATION + ")");
+            options.addOption("n","number-of-files",true,"Integer. Number of concurrent files to read from/write to per location (default: " + Main.NUMBER_OF_FILES + ". Max: 100)");
             options.addOption("p","prefix",true,"String. Filename prefix (default: " + Main.FILE_NAME_PREFIX + ")");
-            options.getOption("l").setValueSeparator(':');
             CommandLine commandLine = new DefaultParser().parse(options, args);
             if (commandLine.hasOption("rnd"))
                 Main.RANDOM_ACCESS = true;
@@ -54,7 +57,20 @@ public class Main{
                 Main.NUMBER_OF_FILES = Integer.parseInt(commandLine.getOptionValue("n"));
             }
             if (commandLine.hasOption("l")){
-                Main.LOCATION = Arrays.asList(commandLine.getOptionValues("l"));
+                Main.LOCATION = new ArrayList<>();
+                StringTokenizer tokenizer = new StringTokenizer(commandLine.getOptionValue("l"),",");
+                if(tokenizer.countTokens()<1){
+                    System.err.println("Your parameter for location is wrong. It should be comma delimited");
+                    System.exit(1);
+                }
+                while (tokenizer.hasMoreTokens()){
+                    String file = tokenizer.nextToken();
+                    if(!(new File(file).isDirectory())){
+                        System.err.println("Path " + file + " is not a directory, and I won't create it.");
+                        System.exit(1);
+                    }
+                    Main.LOCATION.add(file);
+                }
             }
             if (commandLine.hasOption("b")){
                 Main.BUFFER_SIZE = Integer.parseInt(commandLine.getOptionValue("b"));
@@ -65,18 +81,21 @@ public class Main{
             if (commandLine.hasOption("p")){
                 Main.FILE_NAME_PREFIX = commandLine.getOptionValue("p");
             }
-            System.out.println("Load summary:");
-            System.out.println("Buffer size: " + Main.BUFFER_SIZE);
+            System.out.println("Load config summary:");
+            System.out.println("Buffer size (bytes): " + Main.BUFFER_SIZE);
             System.out.println("Random access: " + Main.RANDOM_ACCESS);
-            System.out.println("File location: " + Main.LOCATION);
             System.out.println("Number of files: " + Main.NUMBER_OF_FILES);
+            System.out.println("File name prefix: " + Main.FILE_NAME_PREFIX);
             System.out.println("Size of each file (bytes): " + Main.FILE_SIZE);
+            System.out.println("File location: " + Main.LOCATION);
+
 
 
             System.out.print("Are you sure to continue (Y/N)? ");
             if (new BufferedReader(new InputStreamReader(System.in)).readLine().toUpperCase().matches("Y")){
                 System.out.println("Continuing...");
-                System.out.println(2%200);
+                IOGEN_POOL = Executors.newFixedThreadPool(Main.NUMBER_OF_FILES%50);
+                startProcess();
             }
             else {
                 System.out.println("Exiting");
@@ -88,8 +107,20 @@ public class Main{
         }catch(ParseException | IOException | NumberFormatException pex) {
             System.err.println(pex.getMessage());
             HelpFormatter helpFormatter = new HelpFormatter();
+            helpFormatter.setWidth(100);
             helpFormatter.printHelp("java -jar IOGenerator.jar [options] --rnd | --seq", options);
             System.exit(1);
+        }
+    }
+
+    private static void startProcess() {
+
+    }
+
+    private class IOGenerator implements Runnable{
+        @Override
+        public void run() {
+
         }
     }
 
