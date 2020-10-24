@@ -1,6 +1,7 @@
 package app.dmarts.java.iohogger;
 
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import org.apache.commons.cli.*;
 
 import java.io.BufferedReader;
@@ -29,7 +30,6 @@ public class Main{
         try {
             options.addOption("b", "buffer", true, "Integer. Read/write buffer size in bytes (default: " + Main.BUFFER_SIZE + ")");
             options.addOption("s", "filesize", true, "Integer. Size of each file in bytes (default: " + Main.FILE_SIZE + ")");
-
 
             OptionGroup group = new OptionGroup();
             Option seqrand = Option.builder()
@@ -101,9 +101,6 @@ public class Main{
                 System.out.println("Exiting");
                 System.exit(0);
             }
-
-
-
         }catch(ParseException | IOException | NumberFormatException pex) {
             System.err.println(pex.getMessage());
             HelpFormatter helpFormatter = new HelpFormatter();
@@ -114,17 +111,56 @@ public class Main{
     }
 
     private static void startProcess() {
-
-    }
-
-    private class IOGenerator implements Runnable{
-        @Override
-        public void run() {
-
+        int EXPECTED_FILE_COUNT = 0;
+        for(int i=0;i<Main.LOCATION.size();i++){
+            File dir = new File(Main.LOCATION.get(i));
+            if(dir.exists()) {
+                if (dir.canWrite()) {
+                    System.out.println("Writing on: " + dir.getAbsolutePath());
+                    for(int j=0;j<Main.NUMBER_OF_FILES;j++) {
+                        String filename = dir.getAbsolutePath() + File.separatorChar + Main.FILE_NAME_PREFIX + j;
+                        EXPECTED_FILE_COUNT+=1;
+                        Main.IOGEN_POOL.submit(new IOGenerator(filename));
+                    }
+                }
+                else {
+                    System.out.println("Directory " + dir.getAbsolutePath() + " isn't writable.");
+                    continue;
+                }
+            }
+            else {
+                System.out.println("Directory " + dir.getAbsolutePath() + " doesn't exist and I won't create it.");
+                continue;
+            }
         }
+        while (Main.STATUS.keySet().size()!=EXPECTED_FILE_COUNT){
+        }
+        Main.IOGEN_POOL.shutdown();
+        for(String file:Main.STATUS.keySet()){
+            System.out.println(Main.STATUS.get(file));
+        }
+
     }
 
-    private static ArrayList<Map<Long, Integer>> getReadWriteMap(int BUFFER_SIZE, long TOTAL_FILE_SIZE, boolean SEQUENTIAL){
+
+
+}
+
+class IOGenerator implements Runnable{
+    private File FILE;
+    private ArrayList<Map<Long, Integer>> WRITE_MAP;
+    public IOGenerator(String filename){
+        this.FILE = new File(filename);
+        this.WRITE_MAP = getReadWriteMap(Main.BUFFER_SIZE,Main.FILE_SIZE,!Main.RANDOM_ACCESS);
+    }
+    @Override
+    public void run() {
+        JsonObject json = new JsonObject();
+        Main.STATUS.put(this.FILE.getAbsolutePath(),json);
+        System.out.println(this.WRITE_MAP);
+    }
+
+    private ArrayList<Map<Long, Integer>> getReadWriteMap(int BUFFER_SIZE, long TOTAL_FILE_SIZE, boolean SEQUENTIAL){
         long WRITE_START;
         WRITE_START = 0;
         ArrayList<Map<Long, Integer>> WRITE_MAP = new ArrayList<>();
@@ -144,4 +180,3 @@ public class Main{
         return WRITE_MAP;
     }
 }
-
