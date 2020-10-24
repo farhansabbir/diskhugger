@@ -2,12 +2,13 @@ package app.dmarts.java.iohogger;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+import com.sun.deploy.util.StringUtils;
 import org.apache.commons.cli.*;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -16,7 +17,7 @@ import java.util.concurrent.Executors;
 public class Main{
     protected static boolean RANDOM_ACCESS = false;
     protected static int BUFFER_SIZE = 4096 * 2; // multiples of 4k
-    protected static long FILE_SIZE = 1048576 * 5; // multiples of 1MB
+    protected static int FILE_SIZE = 1048576 * 5; // multiples of 1MB
     protected static List<String> LOCATION = new ArrayList<String>();
     protected static int NUMBER_OF_FILES = 20;
     protected static String FILE_NAME_PREFIX = "iohogger";
@@ -29,7 +30,7 @@ public class Main{
         Main.LOCATION.add(System.getProperty("user.dir"));
         try {
             options.addOption("b", "buffer", true, "Integer. Read/write buffer size in bytes (default: " + Main.BUFFER_SIZE + ")");
-            options.addOption("s", "filesize", true, "Integer. Size of each file in bytes (default: " + Main.FILE_SIZE + ")");
+            options.addOption("s", "filesize", true, "Integer. Size of each file in bytes (default: " + Main.FILE_SIZE + ". Max: " + Integer.MAX_VALUE + ")");
 
             OptionGroup group = new OptionGroup();
             Option seqrand = Option.builder()
@@ -94,7 +95,7 @@ public class Main{
             System.out.print("Are you sure to continue (Y/N)? ");
             if (new BufferedReader(new InputStreamReader(System.in)).readLine().toUpperCase().matches("Y")){
                 System.out.println("Continuing...");
-                IOGEN_POOL = Executors.newFixedThreadPool(Main.NUMBER_OF_FILES%50);
+                IOGEN_POOL = Executors.newFixedThreadPool((Main.NUMBER_OF_FILES%50)+1);
                 startProcess();
             }
             else {
@@ -112,25 +113,24 @@ public class Main{
 
     private static void startProcess() {
         int EXPECTED_FILE_COUNT = 0;
-        for(int i=0;i<Main.LOCATION.size();i++){
-            File dir = new File(Main.LOCATION.get(i));
-            if(dir.exists()) {
-                if (dir.canWrite()) {
-                    System.out.println("Writing on: " + dir.getAbsolutePath());
-                    for(int j=0;j<Main.NUMBER_OF_FILES;j++) {
+        System.out.println("Please wait.");
+        for(int j=0;j<Main.NUMBER_OF_FILES;j++) {
+            for (int i = 0; i < Main.LOCATION.size(); i++) {
+                File dir = new File(Main.LOCATION.get(i));
+                if (dir.exists()) {
+                    if (dir.canWrite()) {
+                        //System.out.println("Writing on: " + dir.getAbsolutePath());
                         String filename = dir.getAbsolutePath() + File.separatorChar + Main.FILE_NAME_PREFIX + j;
-                        EXPECTED_FILE_COUNT+=1;
+                        EXPECTED_FILE_COUNT += 1;
                         Main.IOGEN_POOL.submit(new IOGenerator(filename));
+                    } else {
+                        System.out.println("Directory " + dir.getAbsolutePath() + " isn't writable.");
+                        continue;
                     }
-                }
-                else {
-                    System.out.println("Directory " + dir.getAbsolutePath() + " isn't writable.");
+                } else {
+                    System.out.println("Directory " + dir.getAbsolutePath() + " doesn't exist and I won't create it.");
                     continue;
                 }
-            }
-            else {
-                System.out.println("Directory " + dir.getAbsolutePath() + " doesn't exist and I won't create it.");
-                continue;
             }
         }
         while (Main.STATUS.keySet().size()!=EXPECTED_FILE_COUNT){
@@ -148,7 +148,7 @@ public class Main{
 
 class IOGenerator implements Runnable{
     private File FILE;
-    private ArrayList<Map<Long, Integer>> WRITE_MAP;
+    private ArrayList<Map<Integer, Integer>> WRITE_MAP;
     public IOGenerator(String filename){
         this.FILE = new File(filename);
         this.WRITE_MAP = getReadWriteMap(Main.BUFFER_SIZE,Main.FILE_SIZE,!Main.RANDOM_ACCESS);
@@ -156,22 +156,48 @@ class IOGenerator implements Runnable{
     @Override
     public void run() {
         JsonObject json = new JsonObject();
+        long timetaken = 0;
+        try {
+
+            FileOutputStream outputStream = new FileOutputStream(this.FILE);
+            FileChannel channel = outputStream.getChannel();
+            String str = "huddai";
+            String writeme = String.join("",Collections.nCopies((Main.BUFFER_SIZE+str.length())/str.length(),str));
+            for(int index=0;index<WRITE_MAP.size();index++){
+                int offset = (int)this.WRITE_MAP.get(index).keySet().toArray()[0];
+                long start = System.currentTimeMillis();
+                channel.position(offset);
+                channel.write(ByteBuffer.wrap(writeme.getBytes()));
+                timetaken += System.currentTimeMillis() - start;
+            }
+            outputStream.close();
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            System.err.println(e);
+            e.printStackTrace();
+        }
+
+        json.add("time_taken_in_ms",new JsonPrimitive(timetaken));
+        double speed = (Main.FILE_SIZE/1024.0)/(timetaken/1000.0);
+        json.add("speed_in_KB_per_sec",new JsonPrimitive(speed));
         Main.STATUS.put(this.FILE.getAbsolutePath(),json);
-        System.out.println(this.WRITE_MAP);
+
     }
 
-    private ArrayList<Map<Long, Integer>> getReadWriteMap(int BUFFER_SIZE, long TOTAL_FILE_SIZE, boolean SEQUENTIAL){
-        long WRITE_START;
+    private ArrayList<Map<Integer, Integer>> getReadWriteMap(int BUFFER_SIZE, int TOTAL_FILE_SIZE, boolean SEQUENTIAL){
+        int WRITE_START;
         WRITE_START = 0;
-        ArrayList<Map<Long, Integer>> WRITE_MAP = new ArrayList<>();
+        ArrayList<Map<Integer, Integer>> WRITE_MAP = new ArrayList<>();
         for(int i=0;i<(TOTAL_FILE_SIZE/BUFFER_SIZE);i++){
-            Map<Long, Integer> ENTRY = new HashMap<>();
+            Map<Integer, Integer> ENTRY = new HashMap<>();
             ENTRY.put(WRITE_START,BUFFER_SIZE);
             WRITE_MAP.add(ENTRY);
             WRITE_START+=BUFFER_SIZE;
         }
         if(TOTAL_FILE_SIZE%BUFFER_SIZE!=0) {
-            Map<Long, Integer> ENTRY = new HashMap<>();
+            Map<Integer, Integer> ENTRY = new HashMap<>();
             ENTRY.put(WRITE_START, (int) TOTAL_FILE_SIZE % BUFFER_SIZE);
             WRITE_MAP.add(ENTRY);
         }
