@@ -1,9 +1,8 @@
-package app.dmarts.java.iohogger;
+package app.dmarts.java.diskhugger;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import com.sun.deploy.util.StringUtils;
 import org.apache.commons.cli.*;
 
 import java.io.*;
@@ -119,6 +118,11 @@ public class Main{
             speed += (Main.STATUS.get(file).getAsJsonObject().get("speed_in_KB_per_sec").getAsDouble());
             System.out.println("{\"" + file + "\":" + Main.STATUS.get(file) + "}");
         }
+        System.out.println("Load summary:");
+        System.out.println("Buffer size (bytes): " + Main.BUFFER_SIZE);
+        System.out.println("Random access: " + Main.RANDOM_ACCESS);
+        System.out.println("Number of files: " + Main.NUMBER_OF_FILES);
+        System.out.println("Size of each file (bytes): " + Main.FILE_SIZE);
         System.out.println("Average speed (KB/s): " + speed/Main.STATUS.size());
         System.out.println("Average time taken (ms): " + time_taken/Main.STATUS.size());
         System.out.println("Total time taken (ms): " + (end-start));

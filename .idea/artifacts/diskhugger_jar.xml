@@ -1,7 +1,7 @@
 <component name="ArtifactManager">
-  <artifact type="jar" name="iohugger:jar">
-    <output-path>$PROJECT_DIR$/out/artifacts/iohugger_jar</output-path>
-    <root id="archive" name="iohugger.jar">
+  <artifact type="jar" name="diskhugger:jar">
+    <output-path>$PROJECT_DIR$/out/bin</output-path>
+    <root id="archive" name="diskhugger.jar">
       <element id="module-output" name="iohugger" />
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/google/code/gson/gson/2.8.6/gson-2.8.6.jar" path-in-jar="/" />
       <element id="library" level="project" name="apidocs" />
