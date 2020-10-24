@@ -1,13 +1,20 @@
 package app.dmarts.java.diskhugger;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
 import org.apache.commons.cli.*;
 
 import java.io.*;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -24,15 +31,15 @@ public class Main{
     private static ExecutorService IOGEN_POOL;
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         Options options = new Options();
         Main.LOCATION.add(System.getProperty("user.dir"));
-
+        String dt = LocalDateTime.now().toString();
         long start = 0;
         long end = 0;
         try {
             options.addOption("b", "buffer", true, "Integer. Read/write buffer size in bytes (default: " + Main.BUFFER_SIZE + ")");
-            options.addOption("s", "filesize", true, "Integer. Size of each file in bytes (default: " + Main.FILE_SIZE + ". Max: " + Integer.MAX_VALUE + ")");
+            options.addOption("s", "file-size", true, "Integer. Size of each file in bytes (default: " + Main.FILE_SIZE + ". Max: " + Integer.MAX_VALUE + ")");
 
             OptionGroup group = new OptionGroup();
             Option seqrand = Option.builder()
@@ -84,6 +91,38 @@ public class Main{
             if (commandLine.hasOption("p")){
                 Main.FILE_NAME_PREFIX = commandLine.getOptionValue("p");
             }
+
+
+            HttpServer httpServer = HttpServer.create();
+            httpServer.bind(new InetSocketAddress(8999),10);
+            httpServer.createContext("/", new HttpHandler() {
+                @Override
+                public void handle(HttpExchange httpExchange) throws IOException {
+                    if(httpExchange.getRequestMethod().equals("GET")){
+                        //httpExchange.getResponseBody()
+                        httpExchange.getResponseHeaders().add("Content-type","application/json");
+                        JsonObject response = new JsonObject();
+                        response.add("datetime",new JsonPrimitive(dt));
+                        response.add("total_files",new JsonPrimitive(Main.NUMBER_OF_FILES));
+                        response.add("block_size",new JsonPrimitive(Main.BUFFER_SIZE));
+                        response.add("size_per_file",new JsonPrimitive(Main.FILE_SIZE));
+                        response.add("folders",new JsonPrimitive(Main.LOCATION.toString()));
+                        JsonArray temp = new JsonArray();
+                        for(String key:Main.STATUS.keySet()){
+                            JsonObject object = new JsonObject();
+                            object.add(key,Main.STATUS.get(key));
+                            temp.add(object);
+                        }
+                        response.add("metrics",temp);
+                        httpExchange.sendResponseHeaders(200,response.toString().length());
+                        httpExchange.getResponseBody().write(response.toString().getBytes());
+                        httpExchange.close();
+                    }
+                }
+            });
+            httpServer.start();
+
+
             System.out.println("Load config summary:");
             System.out.println("Buffer size (bytes): " + Main.BUFFER_SIZE);
             System.out.println("Random access: " + Main.RANDOM_ACCESS);
@@ -119,6 +158,7 @@ public class Main{
             System.out.println("{\"" + file + "\":" + Main.STATUS.get(file) + "}");
         }
         System.out.println("Load summary:");
+        System.out.println("Datetime: " + dt);
         System.out.println("Buffer size (bytes): " + Main.BUFFER_SIZE);
         System.out.println("Random access: " + Main.RANDOM_ACCESS);
         System.out.println("Number of files: " + Main.NUMBER_OF_FILES);
@@ -126,6 +166,9 @@ public class Main{
         System.out.println("Average speed (KB/s): " + speed/Main.STATUS.size());
         System.out.println("Average time taken (ms): " + time_taken/Main.STATUS.size());
         System.out.println("Total time taken (ms): " + (end-start));
+
+
+                
     }
 
     private static void startProcess() throws InterruptedException {
@@ -198,7 +241,7 @@ class IOGenerator implements Runnable{
         json.add("time_taken_in_ms",new JsonPrimitive(timetaken));
         double speed = (Main.FILE_SIZE/1024.0)/(timetaken/1000.0);
         json.add("speed_in_KB_per_sec",new JsonPrimitive(speed));
-        Main.STATUS.put(this.FILE.getAbsolutePath(),json);
+        Main.STATUS.put("\"" + this.FILE.getAbsolutePath() + "\"",json);
 
     }
 
