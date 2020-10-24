@@ -28,6 +28,9 @@ public class Main{
     public static void main(String[] args) {
         Options options = new Options();
         Main.LOCATION.add(System.getProperty("user.dir"));
+
+        long start = 0;
+        long end = 0;
         try {
             options.addOption("b", "buffer", true, "Integer. Read/write buffer size in bytes (default: " + Main.BUFFER_SIZE + ")");
             options.addOption("s", "filesize", true, "Integer. Size of each file in bytes (default: " + Main.FILE_SIZE + ". Max: " + Integer.MAX_VALUE + ")");
@@ -91,27 +94,37 @@ public class Main{
             System.out.println("File location: " + Main.LOCATION);
 
 
-
             System.out.print("Are you sure to continue (Y/N)? ");
             if (new BufferedReader(new InputStreamReader(System.in)).readLine().toUpperCase().matches("Y")){
-                System.out.println("Continuing...");
+                start = System.currentTimeMillis();
                 IOGEN_POOL = Executors.newFixedThreadPool((Main.NUMBER_OF_FILES%50)+1);
                 startProcess();
+                end = System.currentTimeMillis();
             }
             else {
                 System.out.println("Exiting");
                 System.exit(0);
             }
-        }catch(ParseException | IOException | NumberFormatException pex) {
+        }catch(ParseException | IOException | NumberFormatException | InterruptedException pex) {
             System.err.println(pex.getMessage());
             HelpFormatter helpFormatter = new HelpFormatter();
             helpFormatter.setWidth(100);
             helpFormatter.printHelp("java -jar IOGenerator.jar [options] --rnd | --seq", options);
             System.exit(1);
         }
+        int time_taken = 0;
+        double speed = 0.0;
+        for(String file:Main.STATUS.keySet()){
+            time_taken += (Main.STATUS.get(file).getAsJsonObject().get("time_taken_in_ms").getAsInt());
+            speed += (Main.STATUS.get(file).getAsJsonObject().get("speed_in_KB_per_sec").getAsDouble());
+            System.out.println("{\"" + file + "\":" + Main.STATUS.get(file) + "}");
+        }
+        System.out.println("Average speed (KB/s): " + speed/Main.STATUS.size());
+        System.out.println("Average time taken (ms): " + time_taken/Main.STATUS.size());
+        System.out.println("Total time taken (ms): " + (end-start));
     }
 
-    private static void startProcess() {
+    private static void startProcess() throws InterruptedException {
         int EXPECTED_FILE_COUNT = 0;
         System.out.println("Please wait.");
         for(int j=0;j<Main.NUMBER_OF_FILES;j++) {
@@ -134,11 +147,10 @@ public class Main{
             }
         }
         while (Main.STATUS.keySet().size()!=EXPECTED_FILE_COUNT){
+            System.out.println("Completed: " + (Main.STATUS.size()*100/EXPECTED_FILE_COUNT) + "%");
+            Thread.sleep(500);
         }
         Main.IOGEN_POOL.shutdown();
-        for(String file:Main.STATUS.keySet()){
-            System.out.println(Main.STATUS.get(file));
-        }
 
     }
 
