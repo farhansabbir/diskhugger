@@ -150,6 +150,7 @@ public class Main{
             helpFormatter.printHelp("java -jar IOGenerator.jar [options] --rnd | --seq", options);
             System.exit(1);
         }
+        /*
         int time_taken = 0;
         double speed = 0.0;
         for(String file:Main.STATUS.keySet()){
@@ -166,7 +167,7 @@ public class Main{
         System.out.println("Average speed (KB/s): " + speed/Main.STATUS.size());
         System.out.println("Average time taken (ms): " + time_taken/Main.STATUS.size());
         System.out.println("Total time taken (ms): " + (end-start));
-
+           */
 
                 
     }
@@ -215,7 +216,14 @@ class IOGenerator implements Runnable{
     @Override
     public void run() {
         JsonObject json = new JsonObject();
-        long timetaken = 0;
+        JsonObject min_obj = new JsonObject();
+        JsonObject max_obj = new JsonObject();
+        min_obj.addProperty("ms",0);
+        max_obj.addProperty("ms",0);
+        json.add("min",min_obj);
+        json.add("max",max_obj);
+        Main.STATUS.put(this.FILE.getAbsolutePath(),json);
+        double timetaken = 0;
         try {
 
             FileOutputStream outputStream = new FileOutputStream(this.FILE);
@@ -227,20 +235,42 @@ class IOGenerator implements Runnable{
                 long start = System.currentTimeMillis();
                 channel.position(offset);
                 channel.write(ByteBuffer.wrap(writeme.getBytes()));
-                timetaken += System.currentTimeMillis() - start;
+                long end = System.currentTimeMillis();
+                timetaken += end - start;
+
+                JsonObject temp = Main.STATUS.get(this.FILE.getAbsolutePath()).getAsJsonObject();
+                System.out.println("Here");
+                min_obj = temp.getAsJsonObject("min");
+                max_obj = temp.getAsJsonObject("max");
+                int min = min_obj.get("ms").getAsInt();
+                int max = max_obj.get("ms").getAsInt();
+                if((end-start) <= min){
+                    min_obj.addProperty("ms",(end-start));
+                    min_obj.addProperty("datetime_in_ms",start);
+                }
+                if((end-start) > max){
+                    max_obj.addProperty("ms",(end-start));
+                    max_obj.addProperty("datetime_in_ms",start);
+                }
+                temp.add("min",min_obj);
+                temp.add("max",max_obj);
+                Main.STATUS.put(this.FILE.getAbsolutePath(),temp);
+
             }
             outputStream.close();
 
         } catch (FileNotFoundException e) {
+            System.err.println(e);
             e.printStackTrace();
         } catch (IOException e) {
             System.err.println(e);
             e.printStackTrace();
+        }catch (Exception e){
+            System.err.println(e.fillInStackTrace());
         }
-
         json.add("time_taken_in_ms",new JsonPrimitive(timetaken));
-        double speed = (Main.FILE_SIZE/1024.0)/(timetaken/1000.0);
-        json.add("speed_in_KB_per_sec",new JsonPrimitive(speed));
+        //double speed = (Main.FILE_SIZE/1024.0)/(timetaken/1000.0);
+        //json.add("speed_in_KB_per_sec",new JsonPrimitive(speed));
         Main.STATUS.put("\"" + this.FILE.getAbsolutePath() + "\"",json);
 
     }
