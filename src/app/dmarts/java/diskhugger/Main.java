@@ -1,9 +1,6 @@
 package app.dmarts.java.diskhugger;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
+import com.google.gson.*;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -28,6 +25,7 @@ public class Main{
     protected static int NUMBER_OF_FILES = 20;
     protected static String FILE_NAME_PREFIX = "iohogger";
     protected static ConcurrentHashMap<String, JsonElement> STATUS = new ConcurrentHashMap<>();
+    protected static ConcurrentHashMap<String, JsonElement> METRIC = new ConcurrentHashMap<>();
     private static ExecutorService IOGEN_POOL;
 
 
@@ -92,6 +90,20 @@ public class Main{
                 Main.FILE_NAME_PREFIX = commandLine.getOptionValue("p");
             }
 
+            // populate the hashmap with configs and setup
+            Main.STATUS.put("metrices",new JsonObject());
+            Main.STATUS.put("when",new JsonPrimitive(dt.toString()));
+            Main.STATUS.put("total_files",new JsonPrimitive(Main.NUMBER_OF_FILES));
+            Main.STATUS.put("block_size",new JsonPrimitive(Main.BUFFER_SIZE));
+            Main.STATUS.put("size_per_file",new JsonPrimitive(Main.FILE_SIZE));
+            Main.STATUS.put("filename_prefix",new JsonPrimitive(Main.FILE_NAME_PREFIX));
+            Main.STATUS.put("random_access",new JsonPrimitive(Main.RANDOM_ACCESS));
+            JsonArray target = new JsonArray();
+            for(String location:Main.LOCATION) {
+                target.add(location);
+            }
+            Main.STATUS.put("target_locations",target);
+
 
             HttpServer httpServer = HttpServer.create();
             httpServer.bind(new InetSocketAddress(8999),10);
@@ -99,21 +111,11 @@ public class Main{
                 @Override
                 public void handle(HttpExchange httpExchange) throws IOException {
                     if(httpExchange.getRequestMethod().equals("GET")){
-                        //httpExchange.getResponseBody()
                         httpExchange.getResponseHeaders().add("Content-type","application/json");
-                        JsonObject response = new JsonObject();
-                        response.add("datetime",new JsonPrimitive(dt));
-                        response.add("total_files",new JsonPrimitive(Main.NUMBER_OF_FILES));
-                        response.add("block_size",new JsonPrimitive(Main.BUFFER_SIZE));
-                        response.add("size_per_file",new JsonPrimitive(Main.FILE_SIZE));
-                        response.add("folders",new JsonPrimitive(Main.LOCATION.toString()));
-                        JsonArray temp = new JsonArray();
-                        for(String key:Main.STATUS.keySet()){
-                            JsonObject object = new JsonObject();
-                            object.add(key,Main.STATUS.get(key));
-                            temp.add(object);
-                        }
-                        response.add("metrics",temp);
+                        StringBuilder response = new StringBuilder();
+                        JsonObject metrics = new JsonObject();
+                        Main.STATUS.put("metrices",new Gson().toJsonTree(Main.METRIC));
+                        response.append(new Gson().toJson(Main.STATUS));
                         httpExchange.sendResponseHeaders(200,response.toString().length());
                         httpExchange.getResponseBody().write(response.toString().getBytes());
                         httpExchange.close();
@@ -150,26 +152,9 @@ public class Main{
             helpFormatter.printHelp("java -jar IOGenerator.jar [options] --rnd | --seq", options);
             System.exit(1);
         }
-        /*
-        int time_taken = 0;
-        double speed = 0.0;
-        for(String file:Main.STATUS.keySet()){
-            time_taken += (Main.STATUS.get(file).getAsJsonObject().get("time_taken_in_ms").getAsInt());
-            speed += (Main.STATUS.get(file).getAsJsonObject().get("speed_in_KB_per_sec").getAsDouble());
-            System.out.println("{\"" + file + "\":" + Main.STATUS.get(file) + "}");
-        }
-        System.out.println("Load summary:");
-        System.out.println("Datetime: " + dt);
-        System.out.println("Buffer size (bytes): " + Main.BUFFER_SIZE);
-        System.out.println("Random access: " + Main.RANDOM_ACCESS);
-        System.out.println("Number of files: " + Main.NUMBER_OF_FILES);
-        System.out.println("Size of each file (bytes): " + Main.FILE_SIZE);
-        System.out.println("Average speed (KB/s): " + speed/Main.STATUS.size());
-        System.out.println("Average time taken (ms): " + time_taken/Main.STATUS.size());
-        System.out.println("Total time taken (ms): " + (end-start));
-           */
+        System.out.print("All threads have completed writing.");
 
-                
+
     }
 
     private static void startProcess() throws InterruptedException {
@@ -194,104 +179,12 @@ public class Main{
                 }
             }
         }
-        while (Main.STATUS.keySet().size()!=EXPECTED_FILE_COUNT){
-            System.out.println("Completed: " + (Main.STATUS.size()*100/EXPECTED_FILE_COUNT) + "%");
-            Thread.sleep(500);
+        System.out.println("Metric: " + Main.METRIC.keySet().size());
+        System.out.println("Expected: " + EXPECTED_FILE_COUNT);
+        while(Main.METRIC.keySet().size() != EXPECTED_FILE_COUNT){
+
         }
+        System.out.println(Main.METRIC);
         Main.IOGEN_POOL.shutdown();
-
-    }
-
-
-
-}
-
-class IOGenerator implements Runnable{
-    private File FILE;
-    private ArrayList<Map<Integer, Integer>> WRITE_MAP;
-    public IOGenerator(String filename){
-        this.FILE = new File(filename);
-        this.WRITE_MAP = getReadWriteMap(Main.BUFFER_SIZE,Main.FILE_SIZE,!Main.RANDOM_ACCESS);
-    }
-    @Override
-    public void run() {
-        JsonObject json = new JsonObject();
-        JsonObject min_obj = new JsonObject();
-        JsonObject max_obj = new JsonObject();
-        min_obj.addProperty("ms",0);
-        max_obj.addProperty("ms",0);
-        json.add("min",min_obj);
-        json.add("max",max_obj);
-        Main.STATUS.put(this.FILE.getAbsolutePath(),json);
-        double timetaken = 0;
-        try {
-
-            FileOutputStream outputStream = new FileOutputStream(this.FILE);
-            FileChannel channel = outputStream.getChannel();
-            String str = "huddai";
-            String writeme = String.join("",Collections.nCopies((Main.BUFFER_SIZE+str.length())/str.length(),str));
-            for(int index=0;index<WRITE_MAP.size();index++){
-                int offset = (int)this.WRITE_MAP.get(index).keySet().toArray()[0];
-                long start = System.currentTimeMillis();
-                channel.position(offset);
-                channel.write(ByteBuffer.wrap(writeme.getBytes()));
-                long end = System.currentTimeMillis();
-                timetaken += end - start;
-
-                JsonObject temp = Main.STATUS.get(this.FILE.getAbsolutePath()).getAsJsonObject();
-                System.out.println("Here");
-                min_obj = temp.getAsJsonObject("min");
-                max_obj = temp.getAsJsonObject("max");
-                int min = min_obj.get("ms").getAsInt();
-                int max = max_obj.get("ms").getAsInt();
-                if((end-start) <= min){
-                    min_obj.addProperty("ms",(end-start));
-                    min_obj.addProperty("datetime_in_ms",start);
-                }
-                if((end-start) > max){
-                    max_obj.addProperty("ms",(end-start));
-                    max_obj.addProperty("datetime_in_ms",start);
-                }
-                temp.add("min",min_obj);
-                temp.add("max",max_obj);
-                Main.STATUS.put(this.FILE.getAbsolutePath(),temp);
-
-            }
-            outputStream.close();
-
-        } catch (FileNotFoundException e) {
-            System.err.println(e);
-            e.printStackTrace();
-        } catch (IOException e) {
-            System.err.println(e);
-            e.printStackTrace();
-        }catch (Exception e){
-            System.err.println(e.fillInStackTrace());
-        }
-        json.add("time_taken_in_ms",new JsonPrimitive(timetaken));
-        //double speed = (Main.FILE_SIZE/1024.0)/(timetaken/1000.0);
-        //json.add("speed_in_KB_per_sec",new JsonPrimitive(speed));
-        Main.STATUS.put("\"" + this.FILE.getAbsolutePath() + "\"",json);
-
-    }
-
-    private ArrayList<Map<Integer, Integer>> getReadWriteMap(int BUFFER_SIZE, int TOTAL_FILE_SIZE, boolean SEQUENTIAL){
-        int WRITE_START;
-        WRITE_START = 0;
-        ArrayList<Map<Integer, Integer>> WRITE_MAP = new ArrayList<>();
-        for(int i=0;i<(TOTAL_FILE_SIZE/BUFFER_SIZE);i++){
-            Map<Integer, Integer> ENTRY = new HashMap<>();
-            ENTRY.put(WRITE_START,BUFFER_SIZE);
-            WRITE_MAP.add(ENTRY);
-            WRITE_START+=BUFFER_SIZE;
-        }
-        if(TOTAL_FILE_SIZE%BUFFER_SIZE!=0) {
-            Map<Integer, Integer> ENTRY = new HashMap<>();
-            ENTRY.put(WRITE_START, (int) TOTAL_FILE_SIZE % BUFFER_SIZE);
-            WRITE_MAP.add(ENTRY);
-        }
-        if(!SEQUENTIAL)
-            Collections.shuffle(WRITE_MAP);
-        return WRITE_MAP;
     }
 }
