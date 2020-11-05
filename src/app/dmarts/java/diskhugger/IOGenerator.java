@@ -38,9 +38,9 @@ public  class IOGenerator implements Runnable{
             try {
                 FileOutputStream outputStream = new FileOutputStream(this.FILE);
                 FileChannel channel = outputStream.getChannel();
-                String str = "huddai";
+                String str = "maal";
                 String writeme = String.join("", Collections.nCopies((Main.BUFFER_SIZE+str.length())/str.length(),str));
-
+                //System.out.println((Main.BUFFER_SIZE+str.length())/str.length());
 
                 for(int index=0;index<WRITE_MAP.size();index++){
                     int offset = (int)this.WRITE_MAP.get(index).keySet().toArray()[0];
