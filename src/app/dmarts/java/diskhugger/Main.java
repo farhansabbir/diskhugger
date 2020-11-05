@@ -32,9 +32,6 @@ public class Main{
     public static void main(String[] args) throws IOException {
         Options options = new Options();
         Main.LOCATION.add(System.getProperty("user.dir"));
-        String dt = LocalDateTime.now().toString();
-        long start = 0;
-        long end = 0;
         try {
             options.addOption("b", "buffer", true, "Integer. Read/write buffer size in bytes (default: " + Main.BUFFER_SIZE + ")");
             options.addOption("s", "file-size", true, "Integer. Size of each file in bytes (default: " + Main.FILE_SIZE + ". Max: " + Integer.MAX_VALUE + ")");
@@ -92,7 +89,7 @@ public class Main{
 
             // populate the hashmap with configs and setup
             Main.STATUS.put("metrices",new JsonObject());
-            Main.STATUS.put("when",new JsonPrimitive(dt.toString()));
+            Main.STATUS.put("main_started_when",new JsonPrimitive(System.currentTimeMillis()));
             Main.STATUS.put("total_files",new JsonPrimitive(Main.NUMBER_OF_FILES));
             Main.STATUS.put("block_size",new JsonPrimitive(Main.BUFFER_SIZE));
             Main.STATUS.put("size_per_file",new JsonPrimitive(Main.FILE_SIZE));
@@ -136,10 +133,9 @@ public class Main{
 
             System.out.print("Are you sure to continue (Y/N)? ");
             if (new BufferedReader(new InputStreamReader(System.in)).readLine().toUpperCase().matches("Y")){
-                start = System.currentTimeMillis();
                 IOGEN_POOL = Executors.newFixedThreadPool((Main.NUMBER_OF_FILES%50)+1);
+                System.out.println("Thread pool size: " + ((Main.NUMBER_OF_FILES%50)+1));
                 startProcess();
-                end = System.currentTimeMillis();
             }
             else {
                 System.out.println("Exiting");
@@ -153,13 +149,15 @@ public class Main{
             System.exit(1);
         }
         System.out.print("All threads have completed writing.");
-
-
+        for(String key:Main.STATUS.keySet()){
+            System.out.println(key + "->" + Main.STATUS.get(key));
+        }
     }
 
     private static void startProcess() throws InterruptedException {
         int EXPECTED_FILE_COUNT = 0;
         System.out.println("Please wait.");
+        long start = System.currentTimeMillis();
         for(int j=0;j<Main.NUMBER_OF_FILES;j++) {
             for (int i = 0; i < Main.LOCATION.size(); i++) {
                 File dir = new File(Main.LOCATION.get(i));
@@ -179,12 +177,18 @@ public class Main{
                 }
             }
         }
-        System.out.println("Metric: " + Main.METRIC.keySet().size());
-        System.out.println("Expected: " + EXPECTED_FILE_COUNT);
+        //System.out.println("Metric: " + Main.METRIC.keySet().size());
+        //System.out.println("Expected: " + EXPECTED_FILE_COUNT);
         while(Main.METRIC.keySet().size() != EXPECTED_FILE_COUNT){
 
         }
-        System.out.println(Main.METRIC);
+        long end = System.currentTimeMillis();
         Main.IOGEN_POOL.shutdown();
+        Main.STATUS.put("threads_started_when",new JsonPrimitive(start));
+        Main.STATUS.put("threads_ended_when",new JsonPrimitive(end));
+        Main.STATUS.put("total_time_taken_ms",new JsonPrimitive(end-start));
+        Main.STATUS.put("total_bytes_written",new JsonPrimitive(EXPECTED_FILE_COUNT * Main.FILE_SIZE));
+        Main.STATUS.put("total_files_written",new JsonPrimitive(Main.METRIC.size()));
+        Main.STATUS.put("avg_speed_mbps",new JsonPrimitive(((EXPECTED_FILE_COUNT * Main.FILE_SIZE)/(1048576))/((end-start)/1000.0)));
     }
 }

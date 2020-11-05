@@ -32,7 +32,7 @@ public  class IOGenerator implements Runnable{
             double timetaken = 0;
             int max, min, cycles = 0;
             max = 0;
-            min = 0;
+            min = 1;
             long maxtime, mintime;
 
             try {
@@ -53,21 +53,21 @@ public  class IOGenerator implements Runnable{
                         max = (int)(end-start);
                         maxtime = start;
                         this.MAX_OBJ.addProperty("ms",max);
-                        this.MAX_OBJ.addProperty("time_at",maxtime);
+                        this.MAX_OBJ.addProperty("when",maxtime);
                     }
 
-                    if ((int)(end-start)<=min){
+                    if ((int)(end-start)<min){
                         min = (int)(end-start);
                         mintime = start;
                         this.MIN_OBJ.addProperty("ms",min);
-                        this.MIN_OBJ.addProperty("time_at",mintime);
+                        this.MIN_OBJ.addProperty("when",mintime);
                     }
                     cycles+=1;
                     this.THREAD_METRIC.add("min",this.MIN_OBJ);
                     this.THREAD_METRIC.add("max",this.MAX_OBJ);
                     this.THREAD_METRIC.addProperty("cycles",cycles);
                     this.THREAD_METRIC.addProperty("time_taken",timetaken);
-                    this.THREAD_METRIC.addProperty("completed_at",end);
+                    this.THREAD_METRIC.addProperty("when",end);
                     Main.METRIC.put(this.FILE.getAbsolutePath(),this.THREAD_METRIC);
                 }
                 outputStream.close();
