@@ -15,8 +15,11 @@ import java.util.stream.LongStream;
 
 public  class IOGenerator implements Runnable {
 
-        private File FILE;
-        private long LAST_POSITION = 0, MAX, MIN, BUFFER;
+        private final File FILE;
+        private long LAST_POSITION = 0;
+        private final long MAX;
+        private final long MIN;
+        private long BUFFER;
 
         public IOGenerator(String filename) {
                 this.FILE = new File(filename);
@@ -72,17 +75,18 @@ public  class IOGenerator implements Runnable {
                         if(Main.FILE_SIZE>=this.BUFFER) {
                                 for (int i = 0; i <= (Main.FILE_SIZE / this.BUFFER); i++) {
                                         writemap = getSeqNextWrite(Main.FILE_SIZE, this.BUFFER);
-                                        System.out.println("" + writemap);
+                                        System.out.println(Thread.currentThread().getName() + "" + writemap);
                                 }
                         }
                         else  {
                                 for (int i = 0; i < (Main.FILE_SIZE / this.BUFFER); i++) {
                                         writemap = (getSeqNextWrite(Main.FILE_SIZE, this.BUFFER));
-                                        System.out.println("" + writemap);
+                                        System.out.println(Thread.currentThread().getName() + "" + writemap);
                                 }
                         }
 
                 }
+                System.out.println(Thread.currentThread().getName() + ": done");
 
         }
 
