@@ -15,6 +15,28 @@ import java.util.stream.LongStream;
 
 public  class IOGenerator implements Runnable {
 
+        /* JSON struct of metric update in Main
+        "filename":{
+                                                              "min":{
+                                                                     "ms":0,
+                                                                     "when":UTC,
+                                                                     "buffer":8192,
+                                                                     "offset":21212
+                                                                     },
+                                                               "max":{
+                                                                     "ms":12,
+                                                                     "when":UTC,
+                                                                     "buffer":8192,
+                                                                     "offset": 121111
+                                                                     }
+                                                               },
+                                                               "started_when":UTC,
+                                                               "ended_when":UTC
+                                                 //
+                                                 //
+                                                 */
+
+
         private final File FILE;
         private long LAST_POSITION = 0;
         private final long MAX;
@@ -54,6 +76,7 @@ public  class IOGenerator implements Runnable {
                                                  long start = System.currentTimeMillis();
                                                  fileChannel.write(ByteBuffer.wrap(data.getBytes()));
                                                  long end = System.currentTimeMillis();
+
 
                                          }
                                          this.BUFFER = (long) (Math.random() * (this.MAX - this.MIN + 1) + this.MIN);
