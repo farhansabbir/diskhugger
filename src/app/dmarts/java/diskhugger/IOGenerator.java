@@ -3,8 +3,15 @@ package app.dmarts.java.diskhugger;
 import com.google.gson.JsonObject;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 
 public  class IOGenerator implements Runnable {
 
@@ -26,6 +33,56 @@ public  class IOGenerator implements Runnable {
 
         @Override
         public void run() {
+                if(Main.RANDOM_ACCESS){
+                        if(Main.FILE_SIZE>this.BUFFER){
+                                this.BUFFER = (long)((Math.random() * (this.MAX - this.MIN + 1)) + this.MIN);
+                        }
+                        Map<Long, Long> writemap;
+                        FileChannel fileChannel = null;
+                        try {
+                                 fileChannel = new FileOutputStream(this.FILE).getChannel();
+                                 while (this.LAST_POSITION!=Main.FILE_SIZE){
+                                         writemap = getRandNextWrite(Main.FILE_SIZE,this.BUFFER,10);
+                                         for(long position:writemap.keySet()){
+                                                 long writebuffer = writemap.get(position);
+                                                 fileChannel.position(position);
+                                                 String data = LongStream.range(0,writebuffer).mapToObj(l -> "data").collect(Collectors.joining()).substring(0,(int)writebuffer);
+
+                                                 long start = System.currentTimeMillis();
+                                                 fileChannel.write(ByteBuffer.wrap(data.getBytes()));
+                                                 long end = System.currentTimeMillis();
+
+                                         }
+                                         this.BUFFER = (long) (Math.random() * (this.MAX - this.MIN + 1) + this.MIN);
+                                 }
+                        } catch (IOException e) {
+                                e.printStackTrace();
+                        } finally {
+                                if (fileChannel !=null){
+                                        try {
+                                                fileChannel.close();
+                                        } catch (IOException e) {
+                                                e.printStackTrace();
+                                        }
+                                }
+                        }
+                }
+                else{
+                        Map<Long, Long> writemap;
+                        if(Main.FILE_SIZE>=this.BUFFER) {
+                                for (int i = 0; i <= (Main.FILE_SIZE / this.BUFFER); i++) {
+                                        writemap = getSeqNextWrite(Main.FILE_SIZE, this.BUFFER);
+                                        System.out.println("" + writemap);
+                                }
+                        }
+                        else  {
+                                for (int i = 0; i < (Main.FILE_SIZE / this.BUFFER); i++) {
+                                        writemap = (getSeqNextWrite(Main.FILE_SIZE, this.BUFFER));
+                                        System.out.println("" + writemap);
+                                }
+                        }
+
+                }
 
         }
 
