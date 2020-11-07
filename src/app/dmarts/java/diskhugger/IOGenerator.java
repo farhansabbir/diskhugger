@@ -49,7 +49,7 @@ public  class IOGenerator implements Runnable {
                                          for(long position:writemap.keySet()){
                                                  long writebuffer = writemap.get(position);
                                                  fileChannel.position(position);
-                                                 String data = LongStream.range(0,writebuffer).mapToObj(l -> "data").collect(Collectors.joining()).substring(0,(int)writebuffer);
+                                                 String data = LongStream.range(0,writebuffer).mapToObj(l -> "maal").collect(Collectors.joining()).substring(0,(int)writebuffer);
 
                                                  long start = System.currentTimeMillis();
                                                  fileChannel.write(ByteBuffer.wrap(data.getBytes()));
