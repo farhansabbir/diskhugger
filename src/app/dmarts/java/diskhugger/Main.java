@@ -7,11 +7,7 @@ import com.sun.net.httpserver.HttpServer;
 import org.apache.commons.cli.*;
 
 import java.io.*;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -19,9 +15,9 @@ import java.util.concurrent.Executors;
 
 public class Main{
     protected static boolean RANDOM_ACCESS = false;
-    protected static int BUFFER_SIZE = 4096 * 2; // multiples of 4k
-    protected static int FILE_SIZE = 1048576 * 5; // multiples of 1MB
-    protected static List<String> LOCATION = new ArrayList<String>();
+    protected static long BUFFER_SIZE = 4096 * 2; // multiples of 4k
+    protected static long FILE_SIZE = 1048576 * 5; // multiples of 1MB
+    protected static List<String> LOCATION = new ArrayList<>();
     protected static int NUMBER_OF_FILES = 20;
     protected static String FILE_NAME_PREFIX = "iohogger";
     protected static ConcurrentHashMap<String, JsonElement> STATUS = new ConcurrentHashMap<>();
@@ -29,7 +25,7 @@ public class Main{
     private static ExecutorService IOGEN_POOL;
 
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args){
         Options options = new Options();
         Main.LOCATION.add(System.getProperty("user.dir"));
         try {
@@ -78,10 +74,10 @@ public class Main{
                 }
             }
             if (commandLine.hasOption("b")){
-                Main.BUFFER_SIZE = Integer.parseInt(commandLine.getOptionValue("b"));
+                Main.BUFFER_SIZE = Long.parseLong(commandLine.getOptionValue("b"));
             }
             if (commandLine.hasOption("s")){
-                Main.FILE_SIZE = Integer.parseInt(commandLine.getOptionValue("s"));
+                Main.FILE_SIZE = Long.parseLong(commandLine.getOptionValue("s"));
             }
             if (commandLine.hasOption("p")){
                 Main.FILE_NAME_PREFIX = commandLine.getOptionValue("p");
@@ -104,19 +100,16 @@ public class Main{
 
             HttpServer httpServer = HttpServer.create();
             httpServer.bind(new InetSocketAddress(8999),10);
-            httpServer.createContext("/", new HttpHandler() {
-                @Override
-                public void handle(HttpExchange httpExchange) throws IOException {
-                    if(httpExchange.getRequestMethod().equals("GET")){
-                        httpExchange.getResponseHeaders().add("Content-type","application/json");
-                        StringBuilder response = new StringBuilder();
-                        JsonObject metrics = new JsonObject();
-                        Main.STATUS.put("metrices",new Gson().toJsonTree(Main.METRIC));
-                        response.append(new Gson().toJson(Main.STATUS));
-                        httpExchange.sendResponseHeaders(200,response.toString().length());
-                        httpExchange.getResponseBody().write(response.toString().getBytes());
-                        httpExchange.close();
-                    }
+            httpServer.createContext("/", httpExchange -> {
+                if(httpExchange.getRequestMethod().equals("GET")){
+                    httpExchange.getResponseHeaders().add("Content-type","application/json");
+                    StringBuilder response = new StringBuilder();
+                    JsonObject metrics = new JsonObject();
+                    Main.STATUS.put("metrices",new Gson().toJsonTree(Main.METRIC));
+                    response.append(new Gson().toJson(Main.STATUS));
+                    httpExchange.sendResponseHeaders(200,response.toString().length());
+                    httpExchange.getResponseBody().write(response.toString().getBytes());
+                    httpExchange.close();
                 }
             });
             httpServer.start();
@@ -141,7 +134,7 @@ public class Main{
                 System.out.println("Exiting");
                 System.exit(0);
             }
-        }catch(ParseException | IOException | NumberFormatException | InterruptedException pex) {
+        }catch(ParseException | IOException | NumberFormatException  pex) {
             System.err.println(pex.getMessage());
             HelpFormatter helpFormatter = new HelpFormatter();
             helpFormatter.setWidth(100);
@@ -154,7 +147,7 @@ public class Main{
         }
     }
 
-    private static void startProcess() throws InterruptedException {
+    private static void startProcess(){
         int EXPECTED_FILE_COUNT = 0;
         System.out.println("Please wait.");
         long start = System.currentTimeMillis();
