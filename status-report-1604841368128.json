@@ -1,0 +1,99 @@
+{
+    "metrices": {
+        "C:\\Users\\farhan.siddique\\IdeaProjects\\iohogger\\iohogger1": {
+            "min": {
+                "ms": 0,
+                "when": 1604841370492,
+                "offset": 0,
+                "buffer": 1516
+            },
+            "max": {
+                "ms": 40,
+                "when": 1604841370662,
+                "offset": 2408894,
+                "buffer": 3944
+            },
+            "started_when": 1604841370466,
+            "ended_when": 1604841376151
+        },
+        "C:\\Users\\farhan.siddique\\IdeaProjects\\iohogger\\iohogger0": {
+            "min": {
+                "ms": 0,
+                "when": 1604841370506,
+                "offset": 0,
+                "buffer": 2883
+            },
+            "max": {
+                "ms": 61,
+                "when": 1604841370781,
+                "offset": 4661556,
+                "buffer": 2354
+            },
+            "started_when": 1604841370465,
+            "ended_when": 1604841376044
+        },
+        "C:\\Users\\farhan.siddique\\IdeaProjects\\iohogger\\iohogger3": {
+            "min": {
+                "ms": 0,
+                "when": 1604841370490,
+                "offset": 0,
+                "buffer": 1954
+            },
+            "max": {
+                "ms": 34,
+                "when": 1604841375196,
+                "offset": 88104300,
+                "buffer": 2915
+            },
+            "started_when": 1604841370467,
+            "ended_when": 1604841375753
+        },
+        "C:\\Users\\farhan.siddique\\IdeaProjects\\iohogger\\iohogger2": {
+            "min": {
+                "ms": 0,
+                "when": 1604841370520,
+                "offset": 19632,
+                "buffer": 2454
+            },
+            "max": {
+                "ms": 43,
+                "when": 1604841372823,
+                "offset": 39588678,
+                "buffer": 1479
+            },
+            "started_when": 1604841370467,
+            "ended_when": 1604841376116
+        },
+        "C:\\Users\\farhan.siddique\\IdeaProjects\\iohogger\\iohogger4": {
+            "min": {
+                "ms": 0,
+                "when": 1604841370519,
+                "offset": 18546,
+                "buffer": 3091
+            },
+            "max": {
+                "ms": 78,
+                "when": 1604841370777,
+                "offset": 3811521,
+                "buffer": 3179
+            },
+            "started_when": 1604841370467,
+            "ended_when": 1604841376169
+        }
+    },
+    "random_access": true,
+    "target_locations": [
+        "C:\\Users\\farhan.siddique\\IdeaProjects\\iohogger"
+    ],
+    "total_files": 5,
+    "total_files_written": 5,
+    "main_started_when": 1604841368128,
+    "total_bytes_written": 500600000,
+    "avg_speed_mbps": 83.75768217734854,
+    "filename_prefix": "iohogger",
+    "size_per_file": 100120000,
+    "threads_ended_when": 1604841376158,
+    "threads_started_when": 1604841370463,
+    "block_size": 4096,
+    "total_time_taken_ms": 5695
+}
