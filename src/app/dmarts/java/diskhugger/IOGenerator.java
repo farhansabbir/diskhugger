@@ -95,16 +95,40 @@ public  class IOGenerator implements Runnable {
                 }
                 else{
                         Map<Long, Long> writemap;
-                        if(Main.FILE_SIZE>=this.BUFFER) {
-                                for (int i = 0; i <= (Main.FILE_SIZE / this.BUFFER); i++) {
-                                        writemap = getSeqNextWrite(Main.FILE_SIZE, this.BUFFER);
-                                        System.out.println(Thread.currentThread().getName() + "" + writemap);
+                        FileChannel fileChannel = null;
+                        try {
+                                fileChannel = new FileOutputStream(this.FILE).getChannel();
+                                if (Main.FILE_SIZE >= this.BUFFER) {
+                                        for (int i = 0; i <= (Main.FILE_SIZE / this.BUFFER); i++) {
+                                                writemap = getSeqNextWrite(Main.FILE_SIZE, this.BUFFER);
+                                                for(long position:writemap.keySet()){
+                                                        long writebuffer = writemap.get(position);
+                                                        String data = LongStream.range(0, writebuffer).mapToObj(l -> "maal").collect(Collectors.joining()).substring(0,(int)writebuffer);
+                                                        fileChannel.position(position);
+                                                        fileChannel.write(ByteBuffer.wrap(data.getBytes()));
+                                                }
+                                        }
+                                } else {
+
+                                        for (int i = 0; i < (Main.FILE_SIZE / this.BUFFER); i++) {
+                                                writemap = (getSeqNextWrite(Main.FILE_SIZE, this.BUFFER));
+                                                for(long position:writemap.keySet()){
+                                                        long writebuffer = writemap.get(position);
+                                                        String data = LongStream.range(0, writebuffer).mapToObj(l -> "maal").collect(Collectors.joining()).substring(0, (int)writebuffer);
+                                                        fileChannel.position(position);
+                                                        fileChannel.write(ByteBuffer.wrap(data.getBytes()));
+                                                }
+                                        }
                                 }
-                        }
-                        else  {
-                                for (int i = 0; i < (Main.FILE_SIZE / this.BUFFER); i++) {
-                                        writemap = (getSeqNextWrite(Main.FILE_SIZE, this.BUFFER));
-                                        System.out.println(Thread.currentThread().getName() + "" + writemap);
+                        } catch (IOException e) {
+                                e.printStackTrace();
+                        } finally {
+                                try {
+                                        if (fileChannel!=null) {
+                                                fileChannel.close();
+                                        }
+                                } catch (IOException e) {
+                                        e.printStackTrace();
                                 }
                         }
 
