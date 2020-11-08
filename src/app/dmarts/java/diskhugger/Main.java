@@ -27,7 +27,7 @@ public class Main{
     private static ExecutorService IOGEN_POOL;
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         Options options = new Options();
         Main.LOCATION.add(System.getProperty("user.dir"));
         try {
@@ -144,9 +144,11 @@ public class Main{
             System.exit(1);
         }
         System.out.print("All threads have completed writing.");
-        for(String key:Main.STATUS.keySet()){
-            System.out.println(key + "->" + Main.STATUS.get(key));
-        }
+
+        Main.STATUS.put("metrices",new Gson().toJsonTree(Main.METRIC));
+        FileChannel fileChannel = new FileOutputStream(new File(Main.FILE_NAME_PREFIX + "-loadtest-report-" + Main.STATUS.get("main_started_when") + ".json")).getChannel();
+        fileChannel.write(ByteBuffer.wrap(new Gson().toJson(Main.STATUS).getBytes()));
+        fileChannel.close();
     }
 
     private static void startProcess(){
