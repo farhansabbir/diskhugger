@@ -103,9 +103,15 @@ public  class IOGenerator implements Runnable {
                                                 writemap = getSeqNextWrite(Main.FILE_SIZE, this.BUFFER);
                                                 for(long position:writemap.keySet()){
                                                         long writebuffer = writemap.get(position);
-                                                        String data = LongStream.range(0, writebuffer).mapToObj(l -> "maal").collect(Collectors.joining()).substring(0,(int)writebuffer);
-                                                        fileChannel.position(position);
+                                                        String data = LongStream.range(0, writebuffer)
+                                                                .mapToObj(l -> "maal")
+                                                                .collect(Collectors.joining())
+                                                                .substring(0,(int)writebuffer);
+
+
+                                                        long start = System.currentTimeMillis();
                                                         fileChannel.write(ByteBuffer.wrap(data.getBytes()));
+                                                        long end = System.currentTimeMillis();
                                                 }
                                         }
                                 } else {
@@ -114,9 +120,15 @@ public  class IOGenerator implements Runnable {
                                                 writemap = (getSeqNextWrite(Main.FILE_SIZE, this.BUFFER));
                                                 for(long position:writemap.keySet()){
                                                         long writebuffer = writemap.get(position);
-                                                        String data = LongStream.range(0, writebuffer).mapToObj(l -> "maal").collect(Collectors.joining()).substring(0, (int)writebuffer);
-                                                        fileChannel.position(position);
+                                                        String data = LongStream.range(0, writebuffer)
+                                                                .mapToObj(l -> "maal")
+                                                                .collect(Collectors.joining())
+                                                                .substring(0, (int)writebuffer);
+
+
+                                                        long start = System.currentTimeMillis();
                                                         fileChannel.write(ByteBuffer.wrap(data.getBytes()));
+                                                        long end = System.currentTimeMillis();
                                                 }
                                         }
                                 }
