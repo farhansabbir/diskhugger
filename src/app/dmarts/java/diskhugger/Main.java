@@ -88,7 +88,7 @@ public class Main{
             // populate the hashmap with configs and setup
             Main.STATUS.put("metrices",new JsonObject());
             Main.STATUS.put("main_started_when",new JsonPrimitive(System.currentTimeMillis()));
-            Main.STATUS.put("block_size",new JsonPrimitive(Main.BUFFER_SIZE));
+            Main.STATUS.put("block_size_bytes",new JsonPrimitive(Main.BUFFER_SIZE));
             Main.STATUS.put("size_per_file",new JsonPrimitive(Main.FILE_SIZE));
             Main.STATUS.put("filename_prefix",new JsonPrimitive(Main.FILE_NAME_PREFIX));
             Main.STATUS.put("random_access",new JsonPrimitive(Main.RANDOM_ACCESS));
