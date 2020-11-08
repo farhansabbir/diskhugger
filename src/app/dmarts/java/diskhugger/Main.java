@@ -87,9 +87,9 @@ public class Main{
 
             // populate the hashmap with configs and setup
             Main.STATUS.put("metrices",new JsonObject());
-            Main.STATUS.put("main_started_when",new JsonPrimitive(System.currentTimeMillis()));
+            Main.STATUS.put("main_started_when_ms",new JsonPrimitive(System.currentTimeMillis()));
             Main.STATUS.put("block_size_bytes",new JsonPrimitive(Main.BUFFER_SIZE));
-            Main.STATUS.put("size_per_file",new JsonPrimitive(Main.FILE_SIZE));
+            Main.STATUS.put("size_per_file_bytes",new JsonPrimitive(Main.FILE_SIZE));
             Main.STATUS.put("filename_prefix",new JsonPrimitive(Main.FILE_NAME_PREFIX));
             Main.STATUS.put("random_access",new JsonPrimitive(Main.RANDOM_ACCESS));
             JsonArray target = new JsonArray();
@@ -143,7 +143,7 @@ public class Main{
             System.exit(1);
         }
         System.out.print("All threads have completed writing.");
-        Main.STATUS.put("main_ended_when",new JsonPrimitive(System.currentTimeMillis()));
+        Main.STATUS.put("main_ended_when_ms",new JsonPrimitive(System.currentTimeMillis()));
 
         Main.STATUS.put("metrices",new Gson().toJsonTree(Main.METRIC));
         FileChannel fileChannel = new FileOutputStream(new File(Main.FILE_NAME_PREFIX + "-loadtest-report-" + Main.STATUS.get("main_started_when") + ".json")).getChannel();
@@ -184,8 +184,8 @@ public class Main{
         while (!Main.IOGEN_POOL.isTerminated()) {
             end = System.currentTimeMillis();
         }
-        Main.STATUS.put("threads_started_when",new JsonPrimitive(start));
-        Main.STATUS.put("threads_ended_when",new JsonPrimitive(end));
+        Main.STATUS.put("threads_started_when_ms",new JsonPrimitive(start));
+        Main.STATUS.put("threads_ended_when_ms",new JsonPrimitive(end));
         Main.STATUS.put("total_bytes_written",new JsonPrimitive(EXPECTED_FILE_COUNT * Main.FILE_SIZE));
         Main.STATUS.put("total_files_written",new JsonPrimitive(Main.METRIC.size()));
         Main.STATUS.put("avg_speed_mbps",new JsonPrimitive(((EXPECTED_FILE_COUNT * Main.FILE_SIZE)/(1048576))/((end-start)/1000.0)));
