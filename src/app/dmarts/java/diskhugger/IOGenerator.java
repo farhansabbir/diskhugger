@@ -65,7 +65,7 @@ public  class IOGenerator implements Runnable {
 
         @Override
         public void run() {
-                long max = 0, min = 0;
+                long max = 0, min = 1;
                 if(Main.RANDOM_ACCESS){
                         if(Main.FILE_SIZE>this.BUFFER){
                                 this.BUFFER = (long)((Math.random() * (this.MAX - this.MIN + 1)) + this.MIN);
@@ -137,6 +137,24 @@ public  class IOGenerator implements Runnable {
                                                         long start = System.currentTimeMillis();
                                                         fileChannel.write(ByteBuffer.wrap(data.getBytes()));
                                                         long end = System.currentTimeMillis();
+                                                        if ((end-start)>max && writebuffer != 0){
+                                                                max = end-start;
+                                                                this.MAX_OBJ.addProperty("ms",max);
+                                                                this.MAX_OBJ.addProperty("when",start);
+                                                                this.MAX_OBJ.addProperty("offset",position);
+                                                                this.MAX_OBJ.addProperty("buffer",writebuffer);
+                                                                this.METRIC_OBJ.add("max",this.MAX_OBJ);
+                                                                Main.METRIC.put(this.FILE.getAbsolutePath(),this.METRIC_OBJ);
+                                                        }
+                                                        if ((end-start)<min && writebuffer!=0){
+                                                                min = end-start;
+                                                                this.MIN_OBJ.addProperty("ms",min);
+                                                                this.MIN_OBJ.addProperty("when",start);
+                                                                this.MIN_OBJ.addProperty("offset",position);
+                                                                this.MIN_OBJ.addProperty("buffer",writebuffer);
+                                                                this.METRIC_OBJ.add("max",this.MIN_OBJ);
+                                                                Main.METRIC.put(this.FILE.getAbsolutePath(),this.METRIC_OBJ);
+                                                        }
                                                 }
                                         }
                                 } else {
@@ -154,6 +172,24 @@ public  class IOGenerator implements Runnable {
                                                         long start = System.currentTimeMillis();
                                                         fileChannel.write(ByteBuffer.wrap(data.getBytes()));
                                                         long end = System.currentTimeMillis();
+                                                        if ((end-start)>max && writebuffer != 0){
+                                                                max = end-start;
+                                                                this.MAX_OBJ.addProperty("ms",max);
+                                                                this.MAX_OBJ.addProperty("when",start);
+                                                                this.MAX_OBJ.addProperty("offset",position);
+                                                                this.MAX_OBJ.addProperty("buffer",writebuffer);
+                                                                this.METRIC_OBJ.add("max",this.MAX_OBJ);
+                                                                Main.METRIC.put(this.FILE.getAbsolutePath(),this.METRIC_OBJ);
+                                                        }
+                                                        if ((end-start)<min && writebuffer!=0){
+                                                                min = end-start;
+                                                                this.MIN_OBJ.addProperty("ms",min);
+                                                                this.MIN_OBJ.addProperty("when",start);
+                                                                this.MIN_OBJ.addProperty("offset",position);
+                                                                this.MIN_OBJ.addProperty("buffer",writebuffer);
+                                                                this.METRIC_OBJ.add("max",this.MIN_OBJ);
+                                                                Main.METRIC.put(this.FILE.getAbsolutePath(),this.METRIC_OBJ);
+                                                        }
                                                 }
                                         }
                                 }
@@ -170,7 +206,7 @@ public  class IOGenerator implements Runnable {
                         }
 
                 }
-                System.out.println(Thread.currentThread().getName() + ": done");
+                //System.out.println(Thread.currentThread().getName() + ": done");
                 this.METRIC_OBJ.addProperty("ended_when",System.currentTimeMillis());
                 Main.METRIC.put(this.FILE.getAbsolutePath(),this.METRIC_OBJ);
         }

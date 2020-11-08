@@ -175,8 +175,11 @@ public class Main{
         while(Main.METRIC.keySet().size() != EXPECTED_FILE_COUNT){
 
         }
-        long end = System.currentTimeMillis();
         Main.IOGEN_POOL.shutdown();
+        long end = 0;
+        while (!Main.IOGEN_POOL.isTerminated()) {
+            end = System.currentTimeMillis();
+        }
         Main.STATUS.put("threads_started_when",new JsonPrimitive(start));
         Main.STATUS.put("threads_ended_when",new JsonPrimitive(end));
         Main.STATUS.put("total_time_taken_ms",new JsonPrimitive(end-start));
